@@ -91,6 +91,13 @@ export default function ChatTab() {
             </div>
             <p className="font-medium text-slate-500">臨床に関する質問をどうぞ</p>
             <p className="text-xs text-slate-400 mt-1">ガイドライン・保険算定情報付きで回答します</p>
+            <div className="mt-4 mx-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                <span className="font-semibold">⚠ 患者氏名・ID等の個人を特定できる情報は入力しないでください。</span>
+                <br />
+                年齢・性別・症状など匿名化した情報のみでご相談ください。
+              </p>
+            </div>
           </div>
         )}
 
@@ -150,6 +157,9 @@ export default function ChatTab() {
 
       {/* Input */}
       <div className="flex-shrink-0 border-t border-slate-200 p-3">
+        <p className="text-[10px] text-amber-700 mb-2 text-center">
+          ⚠ 患者氏名・IDは入力しないでください（匿名化した情報のみ）
+        </p>
         <div className="flex gap-2">
           <input
             type="text"
