@@ -117,6 +117,30 @@ AIとして確信を持てない内容、稀少疾患、最新の治験情報な
 ━━━━━━━━━━━━━━━━━━━━━━━━
 以上のルールを必ず守り、医師の臨床判断を支援してください。最終的な診療判断は主治医が行うことを前提とします。`;
 
+/**
+ * 1問ルール強制：AIの返答に「？」を含む文が2つ以上ある場合、
+ * 最初の質問文だけを残し、残りの質問文を除去する。
+ */
+function enforceOneQuestionRule(text: string): string {
+  // 句点・改行で文を分割（区切り文字を保持）
+  const sentences = text.split(/(?<=[。！？\n])/);
+
+  let questionFound = false;
+  const filtered = sentences.filter((sentence) => {
+    if (sentence.includes("？")) {
+      if (!questionFound) {
+        questionFound = true;
+        return true;
+      }
+      // 2つ目以降の質問文は除去
+      return false;
+    }
+    return true;
+  });
+
+  return filtered.join("").trimEnd();
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { message } = await req.json();
@@ -142,8 +166,11 @@ export async function POST(req: NextRequest) {
       messages: [{ role: "user", content: message }],
     });
 
-    const text =
+    const rawText =
       response.content[0].type === "text" ? response.content[0].text : "";
+
+    // 1問ルール強制：「？」を含む文が2つ以上ある場合、最初の1つだけ残す
+    const text = enforceOneQuestionRule(rawText);
 
     return NextResponse.json({ reply: text });
   } catch (error: unknown) {
