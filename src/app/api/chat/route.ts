@@ -117,12 +117,21 @@ AIとして確信を持てない内容、稀少疾患、最新の治験情報な
 ━━━━━━━━━━━━━━━━━━━━━━━━
 以上のルールを必ず守り、医師の臨床判断を支援してください。最終的な診療判断は主治医が行うことを前提とします。`;
 
-const CONDENSE_PROMPT = `以下の医療回答を読んで、2つのことだけを日本語で答えてください。
-1つ目：この症例で最も疑われる診断を1文で述べる。
-2つ目：今この瞬間に最も重要な情報を1つだけ質問する。
-返答は必ず2文だけにしてください。それ以上書いてはいけません。
+const CONDENSE_PROMPT = `次の文章を読んで、必ず以下のフォーマットだけで答えてください。
 
-医療回答：`;
+フォーマット：
+[診断]〇〇が疑われます。[質問]〇〇はいかがですか？
+
+ルール：
+・必ず上のフォーマット1行だけで答える
+・箇条書き禁止
+・番号リスト禁止
+・改行禁止
+・質問は1つだけ
+・合計40文字以内
+
+参考にする文章：
+`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -158,7 +167,7 @@ export async function POST(req: NextRequest) {
     // 2回目：1回目の回答を「診断1文 + 質問1つ」に圧縮
     const secondResponse = await client.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 256,
+      max_tokens: 100,
       messages: [
         { role: "user", content: `${CONDENSE_PROMPT}${firstText}` },
       ],
