@@ -57,8 +57,8 @@ export default function ChatTab() {
         ]);
       } else {
         const reply: string = chatData.reply;
-        // 治療方針の返答（「？」を含まない）のときだけPubMed検索する
-        const isTreatmentResponse = !reply.includes("？");
+        // APIから返された治療方針フラグでPubMed検索を判定
+        const isTreatmentResponse: boolean = chatData.isTreatment === true;
 
         let articles: PubMedArticle[] = [];
         if (isTreatmentResponse) {
