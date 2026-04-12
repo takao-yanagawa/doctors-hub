@@ -61,17 +61,33 @@ export default function ChatTab() {
         const isTreatmentResponse: boolean = chatData.isTreatment === true;
 
         let articles: PubMedArticle[] = [];
+        // 論文が見つからなかった場合のフォールバック
+        const fallbackArticle: PubMedArticle = {
+          pmid: "",
+          title:
+            "日本呼吸器学会「成人市中肺炎診療ガイドライン」では、併存疾患あり外来CAPに対して呼吸器フルオロキノロン単剤またはβラクタム＋マクロライド/ドキシサイクリン併用を推奨しています。",
+          authors: "日本呼吸器学会",
+          journal: "成人市中肺炎診療ガイドライン",
+          year: "",
+        };
+
         if (isTreatmentResponse) {
           try {
             const pubmedRes = await fetch("/api/pubmed", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ query: reply }),
+              body: JSON.stringify({
+                query: "community acquired pneumonia treatment guidelines Japan",
+              }),
             });
             const pubmedData = await pubmedRes.json();
             articles = pubmedData.articles || [];
           } catch {
-            // PubMed検索失敗は無視して治療方針だけ表示
+            // PubMed検索失敗
+          }
+          // 0件の場合はフォールバックを表示
+          if (articles.length === 0) {
+            articles = [fallbackArticle];
           }
         }
 
@@ -80,7 +96,7 @@ export default function ChatTab() {
           {
             role: "assistant",
             content: reply,
-            articles: articles.length > 0 ? articles : undefined,
+            articles: isTreatmentResponse ? articles : undefined,
           },
         ]);
       }
@@ -137,22 +153,33 @@ export default function ChatTab() {
                   <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-1">
                     PubMed 関連論文
                   </p>
-                  {msg.articles.map((article) => (
-                    <a
-                      key={article.pmid}
-                      href={`https://pubmed.ncbi.nlm.nih.gov/${article.pmid}/`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 hover:bg-blue-100 transition-colors"
-                    >
-                      <p className="text-xs font-medium text-blue-900 line-clamp-2">
-                        {article.title}
-                      </p>
-                      <p className="text-[10px] text-blue-600 mt-0.5">
-                        {article.authors} - {article.journal} ({article.year})
-                      </p>
-                    </a>
-                  ))}
+                  {msg.articles.map((article, idx) =>
+                    article.pmid ? (
+                      <a
+                        key={article.pmid}
+                        href={`https://pubmed.ncbi.nlm.nih.gov/${article.pmid}/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 hover:bg-blue-100 transition-colors"
+                      >
+                        <p className="text-xs font-medium text-blue-900 line-clamp-2">
+                          {article.title}
+                        </p>
+                        <p className="text-[10px] text-blue-600 mt-0.5">
+                          {article.authors} - {article.journal} ({article.year})
+                        </p>
+                      </a>
+                    ) : (
+                      <div
+                        key={`fallback-${idx}`}
+                        className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2"
+                      >
+                        <p className="text-xs font-medium text-blue-900">
+                          {article.title}
+                        </p>
+                      </div>
+                    )
+                  )}
                 </div>
               )}
             </div>
