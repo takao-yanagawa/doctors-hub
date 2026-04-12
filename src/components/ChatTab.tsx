@@ -16,6 +16,30 @@ interface Message {
   articles?: PubMedArticle[];
 }
 
+const KEYWORD_MAP: [string, string][] = [
+  ["くも膜下出血", "subarachnoid hemorrhage"],
+  ["脳動脈瘤", "cerebral aneurysm"],
+  ["動脈瘤", "cerebral aneurysm"],
+  ["クリッピング", "aneurysm clipping"],
+  ["コイル塞栓", "coil embolization"],
+  ["市中肺炎", "community acquired pneumonia"],
+  ["肺炎", "community acquired pneumonia"],
+  ["レボフロキサシン", "levofloxacin pneumonia"],
+  ["心不全", "heart failure treatment"],
+  ["脳梗塞", "cerebral infarction treatment"],
+  ["髄膜炎", "meningitis treatment"],
+];
+
+function buildPubMedQuery(text: string): string {
+  for (const [ja, en] of KEYWORD_MAP) {
+    if (text.includes(ja)) {
+      return en;
+    }
+  }
+  // どれも含まれない場合は最初の20文字をそのまま使う
+  return text.substring(0, 20);
+}
+
 export default function ChatTab() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -72,13 +96,12 @@ export default function ChatTab() {
         };
 
         if (isTreatmentResponse) {
+          const pubmedQuery = buildPubMedQuery(reply);
           try {
             const pubmedRes = await fetch("/api/pubmed", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                query: "community acquired pneumonia treatment guidelines Japan",
-              }),
+              body: JSON.stringify({ query: pubmedQuery }),
             });
             const pubmedData = await pubmedRes.json();
             articles = pubmedData.articles || [];
