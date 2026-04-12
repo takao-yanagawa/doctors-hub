@@ -35,28 +35,20 @@ export default function ChatTab() {
     setLoading(true);
 
     try {
-      // Call Claude API and PubMed in parallel
-      const [chatRes, pubmedRes] = await Promise.all([
-        fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: text,
-            history: messages.map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
-          }),
+      // まずAIの返答を取得
+      const chatRes = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          history: messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
         }),
-        fetch("/api/pubmed", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: text }),
-        }),
-      ]);
+      });
 
       const chatData = await chatRes.json();
-      const pubmedData = await pubmedRes.json();
 
       if (chatData.error) {
         setMessages((prev) => [
@@ -64,12 +56,31 @@ export default function ChatTab() {
           { role: "assistant", content: `エラー: ${chatData.error}` },
         ]);
       } else {
+        const reply: string = chatData.reply;
+        // 治療方針の返答（「？」を含まない）のときだけPubMed検索する
+        const isTreatmentResponse = !reply.includes("？");
+
+        let articles: PubMedArticle[] = [];
+        if (isTreatmentResponse) {
+          try {
+            const pubmedRes = await fetch("/api/pubmed", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ query: reply }),
+            });
+            const pubmedData = await pubmedRes.json();
+            articles = pubmedData.articles || [];
+          } catch {
+            // PubMed検索失敗は無視して治療方針だけ表示
+          }
+        }
+
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: chatData.reply,
-            articles: pubmedData.articles,
+            content: reply,
+            articles: articles.length > 0 ? articles : undefined,
           },
         ]);
       }
