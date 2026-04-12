@@ -117,58 +117,12 @@ AIとして確信を持てない内容、稀少疾患、最新の治験情報な
 ━━━━━━━━━━━━━━━━━━━━━━━━
 以上のルールを必ず守り、医師の臨床判断を支援してください。最終的な診療判断は主治医が行うことを前提とします。`;
 
-/**
- * 1問ルール強制：箇条書き・番号リストを検出したら
- * 強制的に「第一印象1文 + 最初の質問1つ」に圧縮する。
- */
-function enforceOneQuestionRule(text: string): string {
-  const lines = text.split("\n");
+const CONDENSE_PROMPT = `以下の医療回答を読んで、2つのことだけを日本語で答えてください。
+1つ目：この症例で最も疑われる診断を1文で述べる。
+2つ目：今この瞬間に最も重要な情報を1つだけ質問する。
+返答は必ず2文だけにしてください。それ以上書いてはいけません。
 
-  // 箇条書き・番号リスト・見出しパターンを検出
-  const listPattern = /^(\s*(\d+[\.\)）]|[・\-\*]|\*\*[^*]+\*\*))/;
-  const listLines = lines.filter((line) => listPattern.test(line.trim()));
-
-  // リスト行が2行以上あれば、強制圧縮モードに入る
-  if (listLines.length >= 2) {
-    // 全文から「？」を含む文を抽出（句点・改行・？で分割）
-    const allSentences = text.split(/(?<=[。！？\?]|\n)/);
-    const questions = allSentences.filter(
-      (s) => s.includes("？") || s.includes("?")
-    );
-    const firstQuestion = questions.length > 0 ? questions[0].trim() : "";
-
-    // 第一印象を取り出す：リストでも質問でもない最初の実文
-    const nonListNonQuestion = allSentences.filter((s) => {
-      const trimmed = s.trim();
-      if (!trimmed) return false;
-      if (trimmed.includes("？") || trimmed.includes("?")) return false;
-      if (listPattern.test(trimmed)) return false;
-      return true;
-    });
-    const firstImpression =
-      nonListNonQuestion.length > 0 ? nonListNonQuestion[0].trim() : "";
-
-    // 第一印象 + 最初の質問1つだけで再構成
-    const parts = [firstImpression, firstQuestion].filter(Boolean);
-    return parts.join("\n\n");
-  }
-
-  // リストが無い場合でも、質問文が2つ以上あれば2つ目以降を除去
-  const sentences = text.split(/(?<=[。！？\?\n])/);
-  let questionFound = false;
-  const filtered = sentences.filter((sentence) => {
-    if (sentence.includes("？") || sentence.includes("?")) {
-      if (!questionFound) {
-        questionFound = true;
-        return true;
-      }
-      return false;
-    }
-    return true;
-  });
-
-  return filtered.join("").trimEnd();
-}
+医療回答：`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -188,18 +142,32 @@ export async function POST(req: NextRequest) {
 
     const client = new Anthropic({ apiKey });
 
-    const response = await client.messages.create({
+    // 1回目：通常の臨床回答を生成（ユーザーには見せない）
+    const firstResponse = await client.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 2048,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: message }],
     });
 
-    const rawText =
-      response.content[0].type === "text" ? response.content[0].text : "";
+    const firstText =
+      firstResponse.content[0].type === "text"
+        ? firstResponse.content[0].text
+        : "";
 
-    // 1問ルール強制：「？」を含む文が2つ以上ある場合、最初の1つだけ残す
-    const text = enforceOneQuestionRule(rawText);
+    // 2回目：1回目の回答を「診断1文 + 質問1つ」に圧縮
+    const secondResponse = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 256,
+      messages: [
+        { role: "user", content: `${CONDENSE_PROMPT}${firstText}` },
+      ],
+    });
+
+    const text =
+      secondResponse.content[0].type === "text"
+        ? secondResponse.content[0].text
+        : "";
 
     return NextResponse.json({ reply: text });
   } catch (error: unknown) {
