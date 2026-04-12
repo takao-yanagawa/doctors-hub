@@ -118,21 +118,50 @@ AIとして確信を持てない内容、稀少疾患、最新の治験情報な
 以上のルールを必ず守り、医師の臨床判断を支援してください。最終的な診療判断は主治医が行うことを前提とします。`;
 
 /**
- * 1問ルール強制：AIの返答に「？」を含む文が2つ以上ある場合、
- * 最初の質問文だけを残し、残りの質問文を除去する。
+ * 1問ルール強制：箇条書き・番号リストを検出したら
+ * 強制的に「第一印象1文 + 最初の質問1つ」に圧縮する。
  */
 function enforceOneQuestionRule(text: string): string {
-  // 句点・改行で文を分割（区切り文字を保持）
-  const sentences = text.split(/(?<=[。！？\n])/);
+  const lines = text.split("\n");
 
+  // 箇条書き・番号リスト・見出しパターンを検出
+  const listPattern = /^(\s*(\d+[\.\)）]|[・\-\*]|\*\*[^*]+\*\*))/;
+  const listLines = lines.filter((line) => listPattern.test(line.trim()));
+
+  // リスト行が2行以上あれば、強制圧縮モードに入る
+  if (listLines.length >= 2) {
+    // 全文から「？」を含む文を抽出（句点・改行・？で分割）
+    const allSentences = text.split(/(?<=[。！？\?]|\n)/);
+    const questions = allSentences.filter(
+      (s) => s.includes("？") || s.includes("?")
+    );
+    const firstQuestion = questions.length > 0 ? questions[0].trim() : "";
+
+    // 第一印象を取り出す：リストでも質問でもない最初の実文
+    const nonListNonQuestion = allSentences.filter((s) => {
+      const trimmed = s.trim();
+      if (!trimmed) return false;
+      if (trimmed.includes("？") || trimmed.includes("?")) return false;
+      if (listPattern.test(trimmed)) return false;
+      return true;
+    });
+    const firstImpression =
+      nonListNonQuestion.length > 0 ? nonListNonQuestion[0].trim() : "";
+
+    // 第一印象 + 最初の質問1つだけで再構成
+    const parts = [firstImpression, firstQuestion].filter(Boolean);
+    return parts.join("\n\n");
+  }
+
+  // リストが無い場合でも、質問文が2つ以上あれば2つ目以降を除去
+  const sentences = text.split(/(?<=[。！？\?\n])/);
   let questionFound = false;
   const filtered = sentences.filter((sentence) => {
-    if (sentence.includes("？")) {
+    if (sentence.includes("？") || sentence.includes("?")) {
       if (!questionFound) {
         questionFound = true;
         return true;
       }
-      // 2つ目以降の質問文は除去
       return false;
     }
     return true;
