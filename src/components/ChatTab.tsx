@@ -40,7 +40,13 @@ export default function ChatTab() {
         fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text }),
+          body: JSON.stringify({
+            message: text,
+            history: messages.map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
+          }),
         }),
         fetch("/api/pubmed", {
           method: "POST",

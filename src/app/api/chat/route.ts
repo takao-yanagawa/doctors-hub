@@ -30,11 +30,21 @@ function cutToOneQuestion(text: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { message } = await req.json();
+    const { message, history } = await req.json();
 
     if (!message || typeof message !== "string") {
       return NextResponse.json({ error: "メッセージが必要です" }, { status: 400 });
     }
+
+    // 過去の会話履歴を構築（フロントエンドから受け取る）
+    const conversationHistory: { role: "user" | "assistant"; content: string }[] =
+      Array.isArray(history)
+        ? history.filter(
+            (m: { role: string; content: string }) =>
+              (m.role === "user" || m.role === "assistant") &&
+              typeof m.content === "string"
+          )
+        : [];
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey || apiKey === "your-api-key-here") {
@@ -50,7 +60,7 @@ export async function POST(req: NextRequest) {
       model: "claude-sonnet-4-20250514",
       max_tokens: 150,
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: message }],
+      messages: [...conversationHistory, { role: "user" as const, content: message }],
     });
 
     const aiResponse =
