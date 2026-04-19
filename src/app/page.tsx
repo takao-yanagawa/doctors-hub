@@ -123,12 +123,25 @@ export default function Home() {
   const handleDeclineOffer = (id: string) => {
     const offer = pendingOffers.find((o) => o.id === id);
     if (!offer) return;
+
+    console.log("declining offer date:", offer.date);
+    console.log("availableDates:", availableDates);
+
     setPendingOffers((prev) => prev.filter((o) => o.id !== id));
     setDeclinedOffers((prev) =>
       prev.some((o) => o.id === id) ? prev : [...prev, offer]
     );
-    // availableDates is intentionally not touched: if the offer's date was
-    // a user-marked available day, it must stay green after the decline.
+
+    if (availableDates.includes(offer.date)) {
+      // Date was a user-marked available day → keep it in availableDates.
+      setAvailableDates((prev) =>
+        prev.includes(offer.date) ? prev : [...prev, offer.date]
+      );
+    } else {
+      // Date was not user-marked → make sure it is not in availableDates
+      // so the cell renders as a normal day.
+      setAvailableDates((prev) => prev.filter((d) => d !== offer.date));
+    }
   };
 
   // Loading state
