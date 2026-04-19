@@ -20,6 +20,7 @@ interface ScheduleTabProps {
 }
 
 const BRAND = "#3D3D9E";
+const ACCEPTED = "#5B5BAE";
 
 function fmtDate(y: number, m: number, d: number) {
   return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
@@ -120,7 +121,7 @@ export default function ScheduleTab({
             const isToday = cell.date === todayStr;
             const hasOffer = offerDateSet.has(cell.date);
             const isAccepted = acceptedDateSet.has(cell.date);
-            const isAvailable = availableSet.has(cell.date) || isAccepted;
+            const isAvailable = availableSet.has(cell.date);
 
             let bg = "";
             let border = "border border-transparent";
@@ -130,6 +131,10 @@ export default function ScheduleTab({
             if (isToday) {
               text = "text-white font-bold";
               style.backgroundColor = BRAND;
+              border = "border border-transparent";
+            } else if (isAccepted) {
+              text = "text-white font-bold";
+              style.backgroundColor = ACCEPTED;
               border = "border border-transparent";
             } else if (hasOffer) {
               bg = "bg-yellow-100";
@@ -149,12 +154,26 @@ export default function ScheduleTab({
                 key={i}
                 onClick={() => onToggleAvailable(cell.date)}
                 disabled={hasOffer || isAccepted}
-                className={`h-7 flex items-center justify-center text-[10px] rounded transition-colors ${bg} ${border} ${text} ${
+                className={`relative h-7 flex items-center justify-center text-[10px] rounded transition-colors ${bg} ${border} ${text} ${
                   hasOffer || isAccepted ? "cursor-default" : "cursor-pointer"
                 }`}
                 style={style}
               >
                 {cell.day}
+                {isAccepted && !isToday && (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="absolute top-0.5 right-0.5 w-2.5 h-2.5 text-white"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
               </button>
             );
           })}
