@@ -36,6 +36,14 @@ const tabs = [
     ),
   },
   {
+    label: "予定",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+        <path fillRule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
+  {
     label: "設定",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
@@ -48,27 +56,39 @@ const tabs = [
 export default function BottomNav({
   activeTab,
   onTabChange,
+  scheduleBadge = 0,
 }: {
   activeTab: number;
   onTabChange: (tab: number) => void;
+  scheduleBadge?: number;
 }) {
   return (
-    <nav className="flex-shrink-0 bg-white border-t border-slate-200 px-2 pb-[env(safe-area-inset-bottom)]">
+    <nav className="flex-shrink-0 bg-white border-t border-slate-200 px-1 pb-[env(safe-area-inset-bottom)]">
       <div className="flex justify-around">
-        {tabs.map((tab, i) => (
-          <button
-            key={i}
-            onClick={() => onTabChange(i)}
-            className={`flex flex-col items-center py-2 px-2 min-w-0 transition-colors ${
-              activeTab === i
-                ? "text-blue-700"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            {tab.icon}
-            <span className="text-[10px] mt-0.5 font-medium">{tab.label}</span>
-          </button>
-        ))}
+        {tabs.map((tab, i) => {
+          const isActive = activeTab === i;
+          const showBadge = tab.label === "予定" && scheduleBadge > 0;
+          return (
+            <button
+              key={i}
+              onClick={() => onTabChange(i)}
+              className={`flex flex-col items-center py-2 px-1 min-w-0 transition-colors ${
+                isActive ? "" : "text-slate-400 hover:text-slate-600"
+              }`}
+              style={isActive ? { color: "#3D3D9E" } : undefined}
+            >
+              <div className="relative">
+                {tab.icon}
+                {showBadge && (
+                  <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 leading-none">
+                    {scheduleBadge}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] mt-0.5 font-medium">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
     </nav>
   );
