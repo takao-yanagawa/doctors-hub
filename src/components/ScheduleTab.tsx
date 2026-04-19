@@ -505,6 +505,13 @@ function HistoryView({
                   <span className="text-xs font-medium text-slate-700 truncate min-w-0 flex-1">
                     {o.hospital}
                   </span>
+                  <button
+                    onClick={() => onOpenDetail(o)}
+                    className="flex-shrink-0 px-1.5 py-1 text-[11px] font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
+                    aria-label="詳細を見る"
+                  >
+                    詳細
+                  </button>
                 </div>
               ))}
             </div>
