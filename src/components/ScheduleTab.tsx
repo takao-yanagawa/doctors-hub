@@ -8,6 +8,14 @@ export interface Offer {
   hospital: string;
   shift: string;
   pay: number;
+  address: string;
+  workTime: string;
+  workContent: string;
+  payType: "時給" | "日給";
+  transport: "あり" | "なし" | "実費支給";
+  lunch: "あり" | "なし";
+  items: string[];
+  notes: string;
 }
 
 interface ScheduleTabProps {
@@ -59,6 +67,8 @@ export default function ScheduleTab({
   onDeclineOffer,
 }: ScheduleTabProps) {
   const [showHistory, setShowHistory] = useState(false);
+  const [detailOfferId, setDetailOfferId] = useState<string | null>(null);
+  const detailOffer = pendingOffers.find((o) => o.id === detailOfferId) ?? null;
 
   const today = new Date();
   const year = today.getFullYear();
@@ -227,7 +237,7 @@ export default function ScheduleTab({
             visibleOffers.map((o) => (
               <div
                 key={o.id}
-                className="bg-white rounded-xl border border-slate-200 px-2 py-1.5 flex items-center gap-1.5"
+                className="bg-white rounded-xl border border-slate-200 px-2 py-1.5 flex items-center gap-1"
               >
                 <span
                   className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white flex-shrink-0"
@@ -242,15 +252,22 @@ export default function ScheduleTab({
                   ¥{o.pay.toLocaleString()}
                 </span>
                 <button
+                  onClick={() => setDetailOfferId(o.id)}
+                  className="flex-shrink-0 px-1.5 py-1 text-[11px] font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
+                  aria-label="詳細を見る"
+                >
+                  詳細
+                </button>
+                <button
                   onClick={() => onAcceptOffer(o.id)}
-                  className="flex-shrink-0 px-2.5 py-1 text-[11px] font-bold text-white rounded-md transition-opacity hover:opacity-90"
+                  className="flex-shrink-0 px-2 py-1 text-[11px] font-bold text-white rounded-md transition-opacity hover:opacity-90"
                   style={{ backgroundColor: BRAND }}
                 >
                   承諾
                 </button>
                 <button
                   onClick={() => onDeclineOffer(o.id)}
-                  className="flex-shrink-0 px-2 py-1 text-[11px] font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
+                  className="flex-shrink-0 px-1.5 py-1 text-[11px] font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
                 >
                   断る
                 </button>
@@ -265,6 +282,116 @@ export default function ScheduleTab({
           履歴を見る（承諾 {acceptedOffers.length} ／ 断った {declinedOffers.length}）
         </button>
       </div>
+
+      {detailOffer && (
+        <OfferDetailModal
+          offer={detailOffer}
+          onAccept={() => {
+            onAcceptOffer(detailOffer.id);
+            setDetailOfferId(null);
+          }}
+          onDecline={() => {
+            onDeclineOffer(detailOffer.id);
+            setDetailOfferId(null);
+          }}
+          onClose={() => setDetailOfferId(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function OfferDetailModal({
+  offer,
+  onAccept,
+  onDecline,
+  onClose,
+}: {
+  offer: Offer;
+  onAccept: () => void;
+  onDecline: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-3"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between p-3 border-b border-slate-100 flex-shrink-0">
+          <div className="min-w-0">
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white"
+              style={{ backgroundColor: BRAND }}
+            >
+              {formatDateShort(offer.date)}
+            </span>
+            <h3 className="text-sm font-bold text-slate-800 mt-1 truncate">
+              {offer.hospital}
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="閉じる"
+            className="flex-shrink-0 w-7 h-7 rounded-full hover:bg-slate-100 text-slate-400 flex items-center justify-center text-lg leading-none"
+          >
+            ×
+          </button>
+        </div>
+        <div className="overflow-y-auto px-3 py-2">
+          <DetailRow label="住所" value={offer.address} />
+          <DetailRow label="勤務時間" value={offer.workTime} />
+          <DetailRow label="勤務内容" value={offer.workContent} />
+          <DetailRow
+            label="報酬"
+            value={`¥${offer.pay.toLocaleString()}（${offer.payType}）`}
+          />
+          <DetailRow label="交通費" value={offer.transport} />
+          <DetailRow label="昼食" value={offer.lunch} />
+          <DetailRow
+            label="持参物"
+            value={offer.items.length > 0 ? offer.items.join("、") : "なし"}
+          />
+          <DetailRow label="備考" value={offer.notes} />
+        </div>
+        <div className="p-2.5 border-t border-slate-100 flex gap-1.5 flex-shrink-0">
+          <button
+            onClick={onAccept}
+            className="flex-1 py-2 text-xs font-bold text-white rounded-lg transition-opacity hover:opacity-90"
+            style={{ backgroundColor: BRAND }}
+          >
+            承諾する
+          </button>
+          <button
+            onClick={onDecline}
+            className="flex-1 py-2 text-xs font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50"
+          >
+            断る
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 py-2 text-xs font-medium text-slate-500 bg-slate-100 rounded-lg hover:bg-slate-200"
+          >
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-2 py-1.5 border-b border-slate-100 last:border-0">
+      <span className="text-[11px] text-slate-500 w-16 flex-shrink-0 pt-0.5">
+        {label}
+      </span>
+      <span className="text-xs text-slate-800 font-medium flex-1 break-words leading-relaxed">
+        {value}
+      </span>
     </div>
   );
 }

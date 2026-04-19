@@ -17,6 +17,14 @@ const INITIAL_PENDING_OFFERS: Offer[] = [
     hospital: "○○総合病院",
     shift: "当直（17:00-翌8:00）",
     pay: 80000,
+    address: "東京都新宿区西新宿2-1-1",
+    workTime: "17:00〜翌8:00",
+    workContent: "救急当直（二次救急対応）",
+    payType: "日給",
+    transport: "実費支給",
+    lunch: "あり",
+    items: ["白衣", "聴診器", "院内シューズ"],
+    notes: "当直室あり。仮眠可。救急搬入は平均3〜5件/夜。",
   },
   {
     id: "o2",
@@ -24,6 +32,14 @@ const INITIAL_PENDING_OFFERS: Offer[] = [
     hospital: "××病院",
     shift: "日直（9:00-17:00）",
     pay: 55000,
+    address: "東京都世田谷区三軒茶屋1-2-3",
+    workTime: "9:00〜17:00",
+    workContent: "内科外来（一般内科）",
+    payType: "日給",
+    transport: "あり",
+    lunch: "あり",
+    items: ["白衣", "聴診器"],
+    notes: "電子カルテはDynamics使用。初診患者は少なめ。",
   },
   {
     id: "o3",
@@ -31,6 +47,14 @@ const INITIAL_PENDING_OFFERS: Offer[] = [
     hospital: "△△クリニック",
     shift: "外来（9:00-17:00）",
     pay: 60000,
+    address: "東京都品川区大崎3-4-5",
+    workTime: "9:00〜17:00（休憩12:00〜13:00）",
+    workContent: "内科外来・健診",
+    payType: "日給",
+    transport: "実費支給",
+    lunch: "なし",
+    items: ["白衣", "聴診器", "印鑑"],
+    notes: "健診メイン。午後は外来。",
   },
   {
     id: "o4",
@@ -38,6 +62,14 @@ const INITIAL_PENDING_OFFERS: Offer[] = [
     hospital: "□□病院",
     shift: "当直（17:00-翌9:00）",
     pay: 90000,
+    address: "神奈川県横浜市中区山下町10-1",
+    workTime: "17:00〜翌9:00",
+    workContent: "一次救急当直",
+    payType: "日給",
+    transport: "実費支給",
+    lunch: "あり",
+    items: ["白衣", "聴診器"],
+    notes: "当直室あり。夜間は看護師2名体制。",
   },
 ];
 
@@ -80,23 +112,23 @@ export default function Home() {
   };
 
   const handleAcceptOffer = (id: string) => {
-    setPendingOffers((prev) => {
-      const offer = prev.find((o) => o.id === id);
-      if (offer) {
-        setAcceptedOffers((a) => [...a, offer]);
-      }
-      return prev.filter((o) => o.id !== id);
-    });
+    const offer = pendingOffers.find((o) => o.id === id);
+    if (!offer) return;
+    setPendingOffers((prev) => prev.filter((o) => o.id !== id));
+    setAcceptedOffers((prev) =>
+      prev.some((o) => o.id === id) ? prev : [...prev, offer]
+    );
   };
 
   const handleDeclineOffer = (id: string) => {
-    setPendingOffers((prev) => {
-      const offer = prev.find((o) => o.id === id);
-      if (offer) {
-        setDeclinedOffers((d) => [...d, offer]);
-      }
-      return prev.filter((o) => o.id !== id);
-    });
+    const offer = pendingOffers.find((o) => o.id === id);
+    if (!offer) return;
+    setPendingOffers((prev) => prev.filter((o) => o.id !== id));
+    setDeclinedOffers((prev) =>
+      prev.some((o) => o.id === id) ? prev : [...prev, offer]
+    );
+    // availableDates is intentionally not touched: if the offer's date was
+    // a user-marked available day, it must stay green after the decline.
   };
 
   // Loading state
