@@ -77,7 +77,9 @@ const INITIAL_AVAILABLE_DATES = [
   "2026-04-22",
   "2026-04-23",
   "2026-04-25",
+  "2026-04-26",
   "2026-04-28",
+  "2026-04-29",
 ];
 
 export default function Home() {
