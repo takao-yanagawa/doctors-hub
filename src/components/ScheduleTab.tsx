@@ -67,8 +67,10 @@ export default function ScheduleTab({
   onDeclineOffer,
 }: ScheduleTabProps) {
   const [showHistory, setShowHistory] = useState(false);
-  const [detailOfferId, setDetailOfferId] = useState<string | null>(null);
-  const detailOffer = pendingOffers.find((o) => o.id === detailOfferId) ?? null;
+  const [detailView, setDetailView] = useState<{
+    offer: Offer;
+    readonly: boolean;
+  } | null>(null);
 
   const today = new Date();
   const year = today.getFullYear();
@@ -106,13 +108,33 @@ export default function ScheduleTab({
   const monthLabel = `${year}年${month + 1}月`;
   const visibleOffers = pendingOffers.slice(0, 2);
 
+  const detailModal = detailView && (
+    <OfferDetailModal
+      offer={detailView.offer}
+      readonly={detailView.readonly}
+      onAccept={() => {
+        onAcceptOffer(detailView.offer.id);
+        setDetailView(null);
+      }}
+      onDecline={() => {
+        onDeclineOffer(detailView.offer.id);
+        setDetailView(null);
+      }}
+      onClose={() => setDetailView(null)}
+    />
+  );
+
   if (showHistory) {
     return (
-      <HistoryView
-        acceptedOffers={acceptedOffers}
-        declinedOffers={declinedOffers}
-        onClose={() => setShowHistory(false)}
-      />
+      <>
+        <HistoryView
+          acceptedOffers={acceptedOffers}
+          declinedOffers={declinedOffers}
+          onClose={() => setShowHistory(false)}
+          onOpenDetail={(o) => setDetailView({ offer: o, readonly: true })}
+        />
+        {detailModal}
+      </>
     );
   }
 
@@ -252,7 +274,7 @@ export default function ScheduleTab({
                   ¥{o.pay.toLocaleString()}
                 </span>
                 <button
-                  onClick={() => setDetailOfferId(o.id)}
+                  onClick={() => setDetailView({ offer: o, readonly: false })}
                   className="flex-shrink-0 px-1.5 py-1 text-[11px] font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
                   aria-label="詳細を見る"
                 >
@@ -283,31 +305,20 @@ export default function ScheduleTab({
         </button>
       </div>
 
-      {detailOffer && (
-        <OfferDetailModal
-          offer={detailOffer}
-          onAccept={() => {
-            onAcceptOffer(detailOffer.id);
-            setDetailOfferId(null);
-          }}
-          onDecline={() => {
-            onDeclineOffer(detailOffer.id);
-            setDetailOfferId(null);
-          }}
-          onClose={() => setDetailOfferId(null)}
-        />
-      )}
+      {detailModal}
     </div>
   );
 }
 
 function OfferDetailModal({
   offer,
+  readonly,
   onAccept,
   onDecline,
   onClose,
 }: {
   offer: Offer;
+  readonly?: boolean;
   onAccept: () => void;
   onDecline: () => void;
   onClose: () => void;
@@ -358,22 +369,28 @@ function OfferDetailModal({
           <DetailRow label="備考" value={offer.notes} />
         </div>
         <div className="p-2.5 border-t border-slate-100 flex gap-1.5 flex-shrink-0">
-          <button
-            onClick={onAccept}
-            className="flex-1 py-2 text-xs font-bold text-white rounded-lg transition-opacity hover:opacity-90"
-            style={{ backgroundColor: BRAND }}
-          >
-            承諾する
-          </button>
-          <button
-            onClick={onDecline}
-            className="flex-1 py-2 text-xs font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50"
-          >
-            断る
-          </button>
+          {!readonly && (
+            <>
+              <button
+                onClick={onAccept}
+                className="flex-1 py-2 text-xs font-bold text-white rounded-lg transition-opacity hover:opacity-90"
+                style={{ backgroundColor: BRAND }}
+              >
+                承諾する
+              </button>
+              <button
+                onClick={onDecline}
+                className="flex-1 py-2 text-xs font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50"
+              >
+                断る
+              </button>
+            </>
+          )}
           <button
             onClick={onClose}
-            className="flex-1 py-2 text-xs font-medium text-slate-500 bg-slate-100 rounded-lg hover:bg-slate-200"
+            className={`${
+              readonly ? "w-full" : "flex-1"
+            } py-2 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200`}
           >
             閉じる
           </button>
@@ -400,10 +417,12 @@ function HistoryView({
   acceptedOffers,
   declinedOffers,
   onClose,
+  onOpenDetail,
 }: {
   acceptedOffers: Offer[];
   declinedOffers: Offer[];
   onClose: () => void;
+  onOpenDetail: (offer: Offer) => void;
 }) {
   return (
     <div className="h-full overflow-hidden flex flex-col p-2.5 bg-slate-50">
@@ -448,6 +467,13 @@ function HistoryView({
                   <span className="text-xs font-bold text-slate-700 flex-shrink-0 whitespace-nowrap">
                     ¥{o.pay.toLocaleString()}
                   </span>
+                  <button
+                    onClick={() => onOpenDetail(o)}
+                    className="flex-shrink-0 px-1.5 py-1 text-[11px] font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
+                    aria-label="詳細を見る"
+                  >
+                    詳細
+                  </button>
                 </div>
               ))}
             </div>
