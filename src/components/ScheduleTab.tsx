@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 export interface Offer {
   id: string;
@@ -14,6 +14,7 @@ interface ScheduleTabProps {
   availableDates: string[];
   pendingOffers: Offer[];
   acceptedOffers: Offer[];
+  declinedOffers: Offer[];
   onToggleAvailable: (date: string) => void;
   onAcceptOffer: (id: string) => void;
   onDeclineOffer: (id: string) => void;
@@ -31,14 +32,34 @@ function formatDateShort(date: string) {
   return `${Number(m)}/${Number(d)}`;
 }
 
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className={className}
+    >
+      <path
+        fillRule="evenodd"
+        d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
 export default function ScheduleTab({
   availableDates,
   pendingOffers,
   acceptedOffers,
+  declinedOffers,
   onToggleAvailable,
   onAcceptOffer,
   onDeclineOffer,
 }: ScheduleTabProps) {
+  const [showHistory, setShowHistory] = useState(false);
+
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
@@ -74,6 +95,16 @@ export default function ScheduleTab({
 
   const monthLabel = `${year}年${month + 1}月`;
   const visibleOffers = pendingOffers.slice(0, 2);
+
+  if (showHistory) {
+    return (
+      <HistoryView
+        acceptedOffers={acceptedOffers}
+        declinedOffers={declinedOffers}
+        onClose={() => setShowHistory(false)}
+      />
+    );
+  }
 
   return (
     <div className="h-full overflow-hidden flex flex-col p-2.5 gap-2 bg-slate-50">
@@ -131,11 +162,17 @@ export default function ScheduleTab({
             if (isToday) {
               text = "text-white font-bold";
               style.backgroundColor = BRAND;
-              border = "border border-transparent";
+              border = hasOffer
+                ? "border-2"
+                : "border border-transparent";
+              if (hasOffer) style.borderColor = "#F97316";
             } else if (isAccepted) {
               text = "text-white font-bold";
               style.backgroundColor = ACCEPTED;
-              border = "border border-transparent";
+              border = hasOffer
+                ? "border-2"
+                : "border border-transparent";
+              if (hasOffer) style.borderColor = "#F97316";
             } else if (hasOffer) {
               bg = "bg-yellow-100";
               text = "text-yellow-800 font-bold";
@@ -149,30 +186,21 @@ export default function ScheduleTab({
               bg = "hover:bg-slate-100";
             }
 
+            const locked = hasOffer || isAccepted;
+
             return (
               <button
                 key={i}
                 onClick={() => onToggleAvailable(cell.date)}
-                disabled={hasOffer || isAccepted}
+                disabled={locked}
                 className={`relative h-7 flex items-center justify-center text-[10px] rounded transition-colors ${bg} ${border} ${text} ${
-                  hasOffer || isAccepted ? "cursor-default" : "cursor-pointer"
+                  locked ? "cursor-default" : "cursor-pointer"
                 }`}
                 style={style}
               >
                 {cell.day}
-                {isAccepted && !isToday && (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="absolute top-0.5 right-0.5 w-2.5 h-2.5 text-white"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                {isAccepted && (
+                  <CheckIcon className="absolute top-0.5 right-0.5 w-2.5 h-2.5 text-white" />
                 )}
               </button>
             );
@@ -230,6 +258,105 @@ export default function ScheduleTab({
             ))
           )}
         </div>
+        <button
+          onClick={() => setShowHistory(true)}
+          className="mt-2 self-center text-[11px] font-medium text-slate-500 hover:text-slate-700 underline"
+        >
+          履歴を見る（承諾 {acceptedOffers.length} ／ 断った {declinedOffers.length}）
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function HistoryView({
+  acceptedOffers,
+  declinedOffers,
+  onClose,
+}: {
+  acceptedOffers: Offer[];
+  declinedOffers: Offer[];
+  onClose: () => void;
+}) {
+  return (
+    <div className="h-full overflow-hidden flex flex-col p-2.5 bg-slate-50">
+      <div className="flex items-center justify-between mb-2 flex-shrink-0">
+        <span className="text-sm font-bold" style={{ color: BRAND }}>
+          オファー履歴
+        </span>
+        <button
+          onClick={onClose}
+          className="text-xs font-medium text-slate-600 px-3 py-1 border border-slate-300 bg-white rounded-md hover:bg-slate-50"
+        >
+          閉じる
+        </button>
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-0.5">
+        <section>
+          <h3 className="text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+            承諾済み（{acceptedOffers.length}件）
+          </h3>
+          {acceptedOffers.length === 0 ? (
+            <p className="text-[11px] text-slate-400 px-2 py-3 bg-white rounded-lg border border-slate-200 text-center">
+              承諾済みのオファーはありません
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              {acceptedOffers.map((o) => (
+                <div
+                  key={o.id}
+                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 flex items-center gap-1.5"
+                >
+                  <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-100 text-green-700 flex-shrink-0">
+                    <CheckIcon className="w-2.5 h-2.5" />
+                    承諾
+                  </span>
+                  <span className="text-[11px] text-slate-500 flex-shrink-0">
+                    {formatDateShort(o.date)}
+                  </span>
+                  <span className="text-xs font-bold text-slate-800 truncate min-w-0 flex-1">
+                    {o.hospital}
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 flex-shrink-0 whitespace-nowrap">
+                    ¥{o.pay.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section>
+          <h3 className="text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full bg-slate-400" />
+            断った（{declinedOffers.length}件）
+          </h3>
+          {declinedOffers.length === 0 ? (
+            <p className="text-[11px] text-slate-400 px-2 py-3 bg-white rounded-lg border border-slate-200 text-center">
+              断ったオファーはありません
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              {declinedOffers.map((o) => (
+                <div
+                  key={o.id}
+                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 flex items-center gap-1.5"
+                >
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 flex-shrink-0">
+                    断った
+                  </span>
+                  <span className="text-[11px] text-slate-500 flex-shrink-0">
+                    {formatDateShort(o.date)}
+                  </span>
+                  <span className="text-xs font-medium text-slate-700 truncate min-w-0 flex-1">
+                    {o.hospital}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

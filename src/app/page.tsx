@@ -20,13 +20,20 @@ const INITIAL_PENDING_OFFERS: Offer[] = [
   },
   {
     id: "o2",
+    date: "2026-04-22",
+    hospital: "××病院",
+    shift: "日直（9:00-17:00）",
+    pay: 55000,
+  },
+  {
+    id: "o3",
     date: "2026-04-26",
     hospital: "△△クリニック",
     shift: "外来（9:00-17:00）",
     pay: 60000,
   },
   {
-    id: "o3",
+    id: "o4",
     date: "2026-04-29",
     hospital: "□□病院",
     shift: "当直（17:00-翌9:00）",
@@ -52,6 +59,7 @@ export default function Home() {
     INITIAL_PENDING_OFFERS
   );
   const [acceptedOffers, setAcceptedOffers] = useState<Offer[]>([]);
+  const [declinedOffers, setDeclinedOffers] = useState<Offer[]>([]);
 
   useEffect(() => {
     fetch("/api/auth/check")
@@ -76,16 +84,19 @@ export default function Home() {
       const offer = prev.find((o) => o.id === id);
       if (offer) {
         setAcceptedOffers((a) => [...a, offer]);
-        setAvailableDates((dates) =>
-          dates.includes(offer.date) ? dates : [...dates, offer.date]
-        );
       }
       return prev.filter((o) => o.id !== id);
     });
   };
 
   const handleDeclineOffer = (id: string) => {
-    setPendingOffers((prev) => prev.filter((o) => o.id !== id));
+    setPendingOffers((prev) => {
+      const offer = prev.find((o) => o.id === id);
+      if (offer) {
+        setDeclinedOffers((d) => [...d, offer]);
+      }
+      return prev.filter((o) => o.id !== id);
+    });
   };
 
   // Loading state
@@ -126,6 +137,7 @@ export default function Home() {
             availableDates={availableDates}
             pendingOffers={pendingOffers}
             acceptedOffers={acceptedOffers}
+            declinedOffers={declinedOffers}
             onToggleAvailable={handleToggleAvailable}
             onAcceptOffer={handleAcceptOffer}
             onDeclineOffer={handleDeclineOffer}
