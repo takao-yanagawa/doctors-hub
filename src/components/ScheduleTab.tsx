@@ -75,9 +75,9 @@ export default function ScheduleTab({
   const visibleOffers = pendingOffers.slice(0, 2);
 
   return (
-    <div className="h-full overflow-hidden flex flex-col p-3 gap-2.5 bg-slate-50">
+    <div className="h-full overflow-hidden flex flex-col p-2.5 gap-2 bg-slate-50">
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-2 flex-shrink-0">
+      <div className="grid grid-cols-3 gap-1.5 flex-shrink-0">
         <SummaryCard label="空き日数" value={availableThisMonth} unit="日" />
         <SummaryCard label="オファー待ち" value={pendingCount} unit="件" />
         <SummaryCard
@@ -89,8 +89,8 @@ export default function ScheduleTab({
       </div>
 
       {/* Calendar */}
-      <div className="bg-white rounded-xl border border-slate-200 p-2.5 flex-shrink-0">
-        <div className="flex items-center justify-between mb-1.5 px-0.5">
+      <div className="bg-white rounded-xl border border-slate-200 p-2 flex-shrink-0">
+        <div className="flex items-center justify-between mb-1 px-0.5">
           <span className="text-xs font-bold" style={{ color: BRAND }}>
             {monthLabel}
           </span>
@@ -102,7 +102,7 @@ export default function ScheduleTab({
           {["日", "月", "火", "水", "木", "金", "土"].map((d, i) => (
             <div
               key={d}
-              className={`text-center text-[10px] font-medium py-0.5 ${
+              className={`text-center text-[9px] font-medium ${
                 i === 0
                   ? "text-red-400"
                   : i === 6
@@ -116,7 +116,7 @@ export default function ScheduleTab({
         </div>
         <div className="grid grid-cols-7 gap-0.5">
           {cells.map((cell, i) => {
-            if (!cell) return <div key={i} className="aspect-square" />;
+            if (!cell) return <div key={i} className="h-7" />;
             const isToday = cell.date === todayStr;
             const hasOffer = offerDateSet.has(cell.date);
             const isAccepted = acceptedDateSet.has(cell.date);
@@ -149,7 +149,7 @@ export default function ScheduleTab({
                 key={i}
                 onClick={() => onToggleAvailable(cell.date)}
                 disabled={hasOffer || isAccepted}
-                className={`aspect-square flex items-center justify-center text-[11px] rounded-md transition-colors ${bg} ${border} ${text} ${
+                className={`h-7 flex items-center justify-center text-[10px] rounded transition-colors ${bg} ${border} ${text} ${
                   hasOffer || isAccepted ? "cursor-default" : "cursor-pointer"
                 }`}
                 style={style}
@@ -163,7 +163,7 @@ export default function ScheduleTab({
 
       {/* Offers */}
       <div className="flex-1 min-h-0 flex flex-col">
-        <div className="flex items-center justify-between mb-1.5 px-0.5 flex-shrink-0">
+        <div className="flex items-center justify-between mb-1 px-0.5 flex-shrink-0">
           <span className="text-xs font-bold text-slate-700">オファー一覧</span>
           {pendingOffers.length > 2 && (
             <span className="text-[9px] text-slate-400">
@@ -171,7 +171,7 @@ export default function ScheduleTab({
             </span>
           )}
         </div>
-        <div className="space-y-1.5 overflow-hidden">
+        <div className="space-y-1.5">
           {visibleOffers.length === 0 ? (
             <div className="text-center text-xs text-slate-400 py-3 bg-white rounded-xl border border-slate-200">
               現在オファーはありません
@@ -180,44 +180,33 @@ export default function ScheduleTab({
             visibleOffers.map((o) => (
               <div
                 key={o.id}
-                className="bg-white rounded-xl border border-slate-200 p-2.5"
+                className="bg-white rounded-xl border border-slate-200 px-2 py-1.5 flex items-center gap-1.5"
               >
-                <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span
-                        className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white flex-shrink-0"
-                        style={{ backgroundColor: BRAND }}
-                      >
-                        {formatDateShort(o.date)}
-                      </span>
-                      <span className="text-xs font-bold text-slate-800 truncate">
-                        {o.hospital}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 truncate">
-                      {o.shift}
-                    </p>
-                  </div>
-                  <span className="text-xs font-bold text-slate-700 flex-shrink-0 whitespace-nowrap">
-                    ¥{o.pay.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={() => onAcceptOffer(o.id)}
-                    className="flex-1 py-1.5 text-xs font-bold text-white rounded-lg transition-opacity hover:opacity-90"
-                    style={{ backgroundColor: BRAND }}
-                  >
-                    承諾
-                  </button>
-                  <button
-                    onClick={() => onDeclineOffer(o.id)}
-                    className="flex-1 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50"
-                  >
-                    断る
-                  </button>
-                </div>
+                <span
+                  className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white flex-shrink-0"
+                  style={{ backgroundColor: BRAND }}
+                >
+                  {formatDateShort(o.date)}
+                </span>
+                <span className="text-xs font-bold text-slate-800 truncate min-w-0 flex-1">
+                  {o.hospital}
+                </span>
+                <span className="text-xs font-bold text-slate-700 flex-shrink-0 whitespace-nowrap">
+                  ¥{o.pay.toLocaleString()}
+                </span>
+                <button
+                  onClick={() => onAcceptOffer(o.id)}
+                  className="flex-shrink-0 px-2.5 py-1 text-[11px] font-bold text-white rounded-md transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: BRAND }}
+                >
+                  承諾
+                </button>
+                <button
+                  onClick={() => onDeclineOffer(o.id)}
+                  className="flex-shrink-0 px-2 py-1 text-[11px] font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
+                >
+                  断る
+                </button>
               </div>
             ))
           )}
@@ -239,13 +228,13 @@ function SummaryCard({
   compact?: boolean;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-2 text-center">
+    <div className="bg-white rounded-xl border border-slate-200 px-2 py-1.5 text-center">
       <p className="text-[9px] text-slate-400 mb-0.5 whitespace-nowrap">
         {label}
       </p>
       <div className="flex items-baseline justify-center gap-0.5">
         <span
-          className={`font-bold ${compact ? "text-sm" : "text-lg"} leading-none`}
+          className={`font-bold ${compact ? "text-sm" : "text-base"} leading-none`}
           style={{ color: BRAND }}
         >
           {value}
