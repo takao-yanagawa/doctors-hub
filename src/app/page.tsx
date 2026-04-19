@@ -6,12 +6,52 @@ import ChatTab from "@/components/ChatTab";
 import CalculatorTab from "@/components/CalculatorTab";
 import GuidelinesTab from "@/components/GuidelinesTab";
 import MedicationsTab from "@/components/MedicationsTab";
+import ScheduleTab, { type Offer } from "@/components/ScheduleTab";
 import SettingsTab from "@/components/SettingsTab";
 import LoginScreen from "@/components/LoginScreen";
+
+const INITIAL_PENDING_OFFERS: Offer[] = [
+  {
+    id: "o1",
+    date: "2026-04-22",
+    hospital: "○○総合病院",
+    shift: "当直（17:00-翌8:00）",
+    pay: 80000,
+  },
+  {
+    id: "o2",
+    date: "2026-04-26",
+    hospital: "△△クリニック",
+    shift: "外来（9:00-17:00）",
+    pay: 60000,
+  },
+  {
+    id: "o3",
+    date: "2026-04-29",
+    hospital: "□□病院",
+    shift: "当直（17:00-翌9:00）",
+    pay: 90000,
+  },
+];
+
+const INITIAL_AVAILABLE_DATES = [
+  "2026-04-22",
+  "2026-04-23",
+  "2026-04-25",
+  "2026-04-28",
+];
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState(0);
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+
+  const [availableDates, setAvailableDates] = useState<string[]>(
+    INITIAL_AVAILABLE_DATES
+  );
+  const [pendingOffers, setPendingOffers] = useState<Offer[]>(
+    INITIAL_PENDING_OFFERS
+  );
+  const [acceptedOffers, setAcceptedOffers] = useState<Offer[]>([]);
 
   useEffect(() => {
     fetch("/api/auth/check")
@@ -23,6 +63,29 @@ export default function Home() {
   const handleLogout = async () => {
     await fetch("/api/auth", { method: "DELETE" });
     setAuthenticated(false);
+  };
+
+  const handleToggleAvailable = (date: string) => {
+    setAvailableDates((prev) =>
+      prev.includes(date) ? prev.filter((d) => d !== date) : [...prev, date]
+    );
+  };
+
+  const handleAcceptOffer = (id: string) => {
+    setPendingOffers((prev) => {
+      const offer = prev.find((o) => o.id === id);
+      if (offer) {
+        setAcceptedOffers((a) => [...a, offer]);
+        setAvailableDates((dates) =>
+          dates.includes(offer.date) ? dates : [...dates, offer.date]
+        );
+      }
+      return prev.filter((o) => o.id !== id);
+    });
+  };
+
+  const handleDeclineOffer = (id: string) => {
+    setPendingOffers((prev) => prev.filter((o) => o.id !== id));
   };
 
   // Loading state
@@ -58,11 +121,25 @@ export default function Home() {
         {activeTab === 1 && <CalculatorTab />}
         {activeTab === 2 && <GuidelinesTab />}
         {activeTab === 3 && <MedicationsTab />}
-        {activeTab === 4 && <SettingsTab onLogout={handleLogout} />}
+        {activeTab === 4 && (
+          <ScheduleTab
+            availableDates={availableDates}
+            pendingOffers={pendingOffers}
+            acceptedOffers={acceptedOffers}
+            onToggleAvailable={handleToggleAvailable}
+            onAcceptOffer={handleAcceptOffer}
+            onDeclineOffer={handleDeclineOffer}
+          />
+        )}
+        {activeTab === 5 && <SettingsTab onLogout={handleLogout} />}
       </main>
 
       {/* Bottom Navigation */}
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNav
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        scheduleBadge={pendingOffers.length}
+      />
     </div>
   );
 }
