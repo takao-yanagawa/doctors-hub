@@ -24,8 +24,8 @@ interface ScheduleTabProps {
   acceptedOffers: Offer[];
   declinedOffers: Offer[];
   onToggleAvailable: (date: string) => void;
-  onAcceptOffer: (id: string) => void;
-  onDeclineOffer: (id: string) => void;
+  onAcceptOffer: (offer: Offer) => void;
+  onDeclineOffer: (offer: Offer) => void;
 }
 
 const BRAND = "#3D3D9E";
@@ -113,11 +113,11 @@ export default function ScheduleTab({
       offer={detailView.offer}
       readonly={detailView.readonly}
       onAccept={() => {
-        onAcceptOffer(detailView.offer.id);
+        onAcceptOffer(detailView.offer);
         setDetailView(null);
       }}
       onDecline={() => {
-        onDeclineOffer(detailView.offer.id);
+        onDeclineOffer(detailView.offer);
         setDetailView(null);
       }}
       onClose={() => setDetailView(null)}
@@ -281,14 +281,14 @@ export default function ScheduleTab({
                   詳細
                 </button>
                 <button
-                  onClick={() => onAcceptOffer(o.id)}
+                  onClick={() => onAcceptOffer(o)}
                   className="flex-shrink-0 px-2 py-1 text-[11px] font-bold text-white rounded-md transition-opacity hover:opacity-90"
                   style={{ backgroundColor: BRAND }}
                 >
                   承諾
                 </button>
                 <button
-                  onClick={() => onDeclineOffer(o.id)}
+                  onClick={() => onDeclineOffer(o)}
                   className="flex-shrink-0 px-1.5 py-1 text-[11px] font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
                 >
                   断る

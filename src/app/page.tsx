@@ -80,29 +80,6 @@ const INITIAL_AVAILABLE_DATES = [
   "2026-04-28",
 ];
 
-// Debug helpers for handleDeclineOffer — let the format of any date string
-// be inspected at runtime regardless of where it came from.
-function detectFormat(d: string): string {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return "YYYY-MM-DD";
-  if (/^\d{1,2}\/\d{1,2}$/.test(d)) return "M/D";
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(d)) return "M/D/YYYY";
-  return "unknown";
-}
-
-function toISODate(d: string): string {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
-  const md = d.match(/^(\d{1,2})\/(\d{1,2})$/);
-  if (md) {
-    const year = new Date().getFullYear();
-    return `${year}-${md[1].padStart(2, "0")}-${md[2].padStart(2, "0")}`;
-  }
-  const mdy = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (mdy) {
-    return `${mdy[3]}-${mdy[1].padStart(2, "0")}-${mdy[2].padStart(2, "0")}`;
-  }
-  return d;
-}
-
 export default function Home() {
   const [activeTab, setActiveTab] = useState(0);
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
@@ -134,53 +111,33 @@ export default function Home() {
     );
   };
 
-  const handleAcceptOffer = (id: string) => {
-    const offer = pendingOffers.find((o) => o.id === id);
-    if (!offer) return;
-    setPendingOffers((prev) => prev.filter((o) => o.id !== id));
+  const handleAcceptOffer = (offer: Offer) => {
+    setPendingOffers((prev) => prev.filter((o) => o.id !== offer.id));
     setAcceptedOffers((prev) =>
-      prev.some((o) => o.id === id) ? prev : [...prev, offer]
+      prev.some((o) => o.id === offer.id) ? prev : [...prev, offer]
     );
   };
 
-  const handleDeclineOffer = (id: string) => {
-    const offer = pendingOffers.find((o) => o.id === id);
-    if (!offer) return;
+  const handleDeclineOffer = (offer: Offer) => {
+    console.log("declining offer:", offer);
+    console.log("INITIAL_AVAILABLE_DATES:", INITIAL_AVAILABLE_DATES);
 
-    // Normalize both sides to YYYY-MM-DD before comparing. Handles the
-    // case where an offer.date could be "M/D" or "YYYY-MM-DD".
-    const normalizedOfferDate = toISODate(offer.date);
-    const normalizedAvailable = availableDates.map(toISODate);
-    const included = normalizedAvailable.includes(normalizedOfferDate);
-
-    console.log("offer.date raw:", offer.date, "format:", detectFormat(offer.date));
-    console.log("offer.date normalized:", normalizedOfferDate);
-    console.log(
-      "availableDates raw:",
-      availableDates,
-      "format:",
-      availableDates[0] ? detectFormat(availableDates[0]) : "n/a"
-    );
-    console.log("availableDates normalized:", normalizedAvailable);
-    console.log("included in availableDates?:", included);
-
-    setPendingOffers((prev) => prev.filter((o) => o.id !== id));
+    // オファーを断った一覧に追加
     setDeclinedOffers((prev) =>
-      prev.some((o) => o.id === id) ? prev : [...prev, offer]
+      prev.some((o) => o.id === offer.id) ? prev : [...prev, offer]
     );
+    // 保留中のオファーから削除
+    setPendingOffers((prev) => prev.filter((o) => o.id !== offer.id));
 
-    if (included) {
-      // Date was a user-marked available day → keep it in availableDates so
-      // the cell stays green after declining.
+    // この日付が元々空き日だったかどうかを INITIAL_AVAILABLE_DATES で確認
+    // （availableDates の現在状態ではなく初期値で判定する）
+    const wasAvailable = INITIAL_AVAILABLE_DATES.includes(offer.date);
+    console.log("wasAvailable:", wasAvailable);
+
+    if (wasAvailable) {
+      // 元々空き日だった場合は空き日に戻す
       setAvailableDates((prev) =>
-        prev.map(toISODate).includes(normalizedOfferDate)
-          ? prev
-          : [...prev, normalizedOfferDate]
-      );
-    } else {
-      // Date was not user-marked → revert the cell to a normal day.
-      setAvailableDates((prev) =>
-        prev.filter((d) => toISODate(d) !== normalizedOfferDate)
+        prev.includes(offer.date) ? prev : [...prev, offer.date]
       );
     }
   };
